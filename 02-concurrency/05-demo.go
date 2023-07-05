@@ -4,11 +4,15 @@ import (
 	"flag"
 	"fmt"
 	"math/rand"
+	"runtime"
 	"sync"
 	"time"
 )
 
 func main() {
+
+	runtime.GOMAXPROCS(16)
+
 	count := flag.Int("count", 0, "number of goroutines")
 	flag.Parse()
 	fmt.Printf("Starting %d goroutines... Hit ENTER to start\n", *count)
