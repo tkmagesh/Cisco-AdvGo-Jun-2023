@@ -12,3 +12,11 @@
 - No powerpoints
 - 100% code driven class
 
+### 
+### Day - 1 ###
+- "any" keyword
+- interfaces
+- higher order functions
+- panic & recovery
+- deferred functions
+
