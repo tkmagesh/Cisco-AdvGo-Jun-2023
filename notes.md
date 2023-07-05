@@ -14,9 +14,10 @@
 
 ### 
 ### Day - 1 ###
-- "any" keyword
-- interfaces
-- higher order functions
-- panic & recovery
-- deferred functions
+- Basics Revision
+    - "any" keyword
+    - interfaces
+    - higher order functions
+    - panic & recovery
+    - deferred functions
 
