@@ -15,17 +15,36 @@ func main() {
 	fmt.Println("Hit ENTER to stop....")
 	go func() {
 		fmt.Scanln()
-		// stopCh <- struct{}{}
 		close(stopCh)
 	}()
-	ch := genFibonocci(stopCh)
-	for no := range ch {
-		fmt.Println(no)
+	ch := getGeneratedData(stopCh)
+	for data := range ch {
+		fmt.Println(data)
 	}
 }
 
-// modify the below function to generate the values for a 5 second duration
-func genFibonocci(stopCh chan struct{}) <-chan int {
+func getGeneratedData(stopCh <-chan struct{}) <-chan string {
+	ch := make(chan string)
+	go func() {
+		fibCh := genFibonocci(stopCh)
+		primeCh := generatePrimes(stopCh)
+	LOOP:
+		for {
+			select {
+			case fibNo := <-fibCh:
+				ch <- fmt.Sprintf("fib : %d", fibNo)
+			case primeNo := <-primeCh:
+				ch <- fmt.Sprintf("prime : %d", primeNo)
+			case <-stopCh:
+				close(ch)
+				break LOOP
+			}
+		}
+	}()
+	return ch
+}
+
+func genFibonocci(stopCh <-chan struct{}) <-chan int {
 	ch := make(chan int)
 	go func() {
 		x, y := 0, 1
@@ -44,14 +63,33 @@ func genFibonocci(stopCh chan struct{}) <-chan int {
 	return ch
 }
 
-//The below function can be replaced with time.After()
-/*
-func timeout(d time.Duration) <-chan time.Time {
-	ch := make(chan time.Time)
+func generatePrimes(stopCh <-chan struct{}) <-chan int {
+	ch := make(chan int)
 	go func() {
-		time.Sleep(d)
-		ch <- time.Now()
+		no := 2
+	LOOP:
+		for {
+			select {
+			case <-stopCh:
+				break LOOP
+			default:
+				if isPrime(no) {
+					ch <- no
+					time.Sleep(300 * time.Millisecond)
+				}
+				no++
+			}
+		}
+		close(ch)
 	}()
 	return ch
 }
-*/
+
+func isPrime(no int) bool {
+	for i := 2; i <= (no / 2); i++ {
+		if no%i == 0 {
+			return false
+		}
+	}
+	return true
+}
