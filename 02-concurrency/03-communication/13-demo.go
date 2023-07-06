@@ -10,6 +10,10 @@ var result int
 
 // consumer
 func main() {
+	go consumer()
+}
+
+func consumer() {
 	ch := add(100, 200)
 	/*
 		go func() {
