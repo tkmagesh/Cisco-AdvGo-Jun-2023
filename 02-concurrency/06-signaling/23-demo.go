@@ -15,7 +15,7 @@ func main() {
 // modify the below function to generate the values for a 5 second duration
 func genFibonocci() <-chan int {
 	ch := make(chan int)
-	timeoutCh := timeout(10 * time.Second)
+	timeoutCh := time.After(5 * time.Second)
 	go func() {
 		x, y := 0, 1
 	LOOP:
@@ -33,6 +33,8 @@ func genFibonocci() <-chan int {
 	return ch
 }
 
+//The below function can be replaced with time.After()
+/*
 func timeout(d time.Duration) <-chan time.Time {
 	ch := make(chan time.Time)
 	go func() {
@@ -41,3 +43,4 @@ func timeout(d time.Duration) <-chan time.Time {
 	}()
 	return ch
 }
+*/
