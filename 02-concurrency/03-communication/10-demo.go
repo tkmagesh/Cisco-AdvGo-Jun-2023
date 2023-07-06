@@ -18,8 +18,8 @@ func main() {
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 	go add(100, 200, wg, ch)
-	result := <-ch
 	wg.Wait()
+	result := <-ch
 	fmt.Println("result :", result)
 
 }
