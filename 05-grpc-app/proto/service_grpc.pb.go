@@ -24,7 +24,8 @@ const _ = grpc.SupportPackageIsVersion7
 type AppServiceClient interface {
 	//operation contracts
 	//request & response
-	Add(ctx context.Context, in *AddRequest, opts ...grpc.CallOption) (*AddResponse, error)
+	Add(ctx context.Context, in *MathOperationRequest, opts ...grpc.CallOption) (*MathOperationResponse, error)
+	Subtract(ctx context.Context, in *MathOperationRequest, opts ...grpc.CallOption) (*MathOperationResponse, error)
 }
 
 type appServiceClient struct {
@@ -35,9 +36,18 @@ func NewAppServiceClient(cc grpc.ClientConnInterface) AppServiceClient {
 	return &appServiceClient{cc}
 }
 
-func (c *appServiceClient) Add(ctx context.Context, in *AddRequest, opts ...grpc.CallOption) (*AddResponse, error) {
-	out := new(AddResponse)
+func (c *appServiceClient) Add(ctx context.Context, in *MathOperationRequest, opts ...grpc.CallOption) (*MathOperationResponse, error) {
+	out := new(MathOperationResponse)
 	err := c.cc.Invoke(ctx, "/proto.AppService/Add", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *appServiceClient) Subtract(ctx context.Context, in *MathOperationRequest, opts ...grpc.CallOption) (*MathOperationResponse, error) {
+	out := new(MathOperationResponse)
+	err := c.cc.Invoke(ctx, "/proto.AppService/Subtract", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +60,8 @@ func (c *appServiceClient) Add(ctx context.Context, in *AddRequest, opts ...grpc
 type AppServiceServer interface {
 	//operation contracts
 	//request & response
-	Add(context.Context, *AddRequest) (*AddResponse, error)
+	Add(context.Context, *MathOperationRequest) (*MathOperationResponse, error)
+	Subtract(context.Context, *MathOperationRequest) (*MathOperationResponse, error)
 	mustEmbedUnimplementedAppServiceServer()
 }
 
@@ -58,8 +69,11 @@ type AppServiceServer interface {
 type UnimplementedAppServiceServer struct {
 }
 
-func (UnimplementedAppServiceServer) Add(context.Context, *AddRequest) (*AddResponse, error) {
+func (UnimplementedAppServiceServer) Add(context.Context, *MathOperationRequest) (*MathOperationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Add not implemented")
+}
+func (UnimplementedAppServiceServer) Subtract(context.Context, *MathOperationRequest) (*MathOperationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Subtract not implemented")
 }
 func (UnimplementedAppServiceServer) mustEmbedUnimplementedAppServiceServer() {}
 
@@ -75,7 +89,7 @@ func RegisterAppServiceServer(s grpc.ServiceRegistrar, srv AppServiceServer) {
 }
 
 func _AppService_Add_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AddRequest)
+	in := new(MathOperationRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -87,7 +101,25 @@ func _AppService_Add_Handler(srv interface{}, ctx context.Context, dec func(inte
 		FullMethod: "/proto.AppService/Add",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AppServiceServer).Add(ctx, req.(*AddRequest))
+		return srv.(AppServiceServer).Add(ctx, req.(*MathOperationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AppService_Subtract_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MathOperationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AppServiceServer).Subtract(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.AppService/Subtract",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AppServiceServer).Subtract(ctx, req.(*MathOperationRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -102,6 +134,10 @@ var AppService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Add",
 			Handler:    _AppService_Add_Handler,
+		},
+		{
+			MethodName: "Subtract",
+			Handler:    _AppService_Subtract_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

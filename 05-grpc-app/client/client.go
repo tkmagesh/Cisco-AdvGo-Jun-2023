@@ -18,11 +18,11 @@ func main() {
 	}
 	appServiceClient := proto.NewAppServiceClient(clientConn)
 	ctx := context.Background()
-	req := &proto.AddRequest{
+	req := &proto.MathOperationRequest{
 		X: 100,
 		Y: 200,
 	}
-	res, err := appServiceClient.Add(ctx, req)
+	res, err := appServiceClient.Subtract(ctx, req)
 	if err != nil {
 		log.Fatalln(err)
 	}

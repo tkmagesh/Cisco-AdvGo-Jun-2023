@@ -14,12 +14,13 @@ type appService struct {
 	proto.UnimplementedAppServiceServer
 }
 
-func (asi *appService) Add(ctx context.Context, req *proto.AddRequest) (*proto.AddResponse, error) {
+// overriding the UnimplementedAppServiceServer.Add method
+func (asi *appService) Add(ctx context.Context, req *proto.MathOperationRequest) (*proto.MathOperationResponse, error) {
 	x := req.GetX()
 	y := req.GetY()
 	fmt.Printf("Received Add request for x = %d and y = %d\n", x, y)
 	result := x + y
-	res := &proto.AddResponse{
+	res := &proto.MathOperationResponse{
 		Result: result,
 	}
 	fmt.Printf("Sending Add response with result = %d\n", result)
