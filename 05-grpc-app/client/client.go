@@ -22,7 +22,9 @@ func main() {
 	ctx := context.Background()
 	// doRequestResponse(ctx, appServiceClient)
 	// doServerStreaming(ctx, appServiceClient)
-	doClientStreaming(ctx, appServiceClient)
+	// doClientStreaming(ctx, appServiceClient)
+	doneCh := doBiDiStreaming(ctx, appServiceClient)
+	<-doneCh
 }
 
 func doRequestResponse(ctx context.Context, appServiceClient proto.AppServiceClient) {
@@ -80,4 +82,64 @@ func doClientStreaming(ctx context.Context, appServiceClient proto.AppServiceCli
 		log.Fatalln(err)
 	}
 	fmt.Printf("Average : %d\n", res.GetAverage())
+}
+
+func doBiDiStreaming(ctx context.Context, appServiceClient proto.AppServiceClient) <-chan struct{} {
+	clientStream, err := appServiceClient.Greet(ctx)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	go sendRequests(ctx, clientStream)
+	cancelCtx, cancel := context.WithCancel(ctx)
+	go func() {
+		fmt.Println("Press ENTER to cancel")
+		fmt.Scanln()
+		cancel()
+	}()
+	return recvResponse(cancelCtx, clientStream)
+	// <-done
+}
+
+func sendRequests(ctx context.Context, clientStream proto.AppService_GreetClient) {
+	persons := []*proto.PersonName{
+		{FirstName: "Magesh", LastName: "Kuppan"},
+		{FirstName: "Suresh", LastName: "Kannan"},
+		{FirstName: "Ramesh", LastName: "Jayaraman"},
+		{FirstName: "Rajesh", LastName: "Pandit"},
+		{FirstName: "Ganesh", LastName: "Kumar"},
+	}
+
+	// done := make(chan struct{})
+
+	for _, person := range persons {
+		req := &proto.GreetRequest{
+			Person: person,
+		}
+		log.Printf("Sending Person : %s %s\n", person.FirstName, person.LastName)
+		if err := clientStream.Send(req); err != nil {
+			log.Fatalln(err)
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+}
+
+func recvResponse(ctx context.Context, clientStream proto.AppService_GreetClient) <-chan struct{} {
+	doneCh := make(chan struct{})
+	go func() {
+	LOOP:
+		for {
+			select {
+			case <-ctx.Done():
+				break LOOP
+			default:
+				res, err := clientStream.Recv()
+				if err != nil {
+					log.Fatalln(err)
+				}
+				log.Println(res.GetMessage())
+			}
+		}
+		close(doneCh)
+	}()
+	return doneCh
 }
