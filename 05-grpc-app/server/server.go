@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"grpc-app/proto"
 	services "grpc-app/server/services/appService"
 
@@ -17,6 +18,11 @@ func main() {
 		log.Fatalln(err)
 	}
 	grpcServer := grpc.NewServer()
+	go func() {
+		fmt.Scanln()
+		fmt.Println("Stopping server....")
+		grpcServer.Stop()
+	}()
 	proto.RegisterAppServiceServer(grpcServer, asi)
 	grpcServer.Serve(listener)
 }

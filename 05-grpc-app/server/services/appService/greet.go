@@ -5,11 +5,18 @@ import (
 	"grpc-app/proto"
 	"log"
 	"time"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func (asi *AppService) Greet(serverStream proto.AppService_GreetServer) error {
 	for {
 		greetReq, err := serverStream.Recv()
+		if code := status.Code(err); code == codes.Unavailable {
+			fmt.Println("Client connection closed")
+			break
+		}
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -24,7 +31,10 @@ func (asi *AppService) Greet(serverStream proto.AppService_GreetServer) error {
 			Message: message,
 		}
 		if err := serverStream.Send(greetResp); err != nil {
-			log.Fatalln(err)
+			if code := status.Code(err); code == codes.Unavailable {
+				fmt.Println("Client connection closed")
+				break
+			}
 		}
 	}
 	return nil

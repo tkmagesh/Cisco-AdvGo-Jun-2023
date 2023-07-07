@@ -9,7 +9,9 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 )
 
 func main() {
@@ -23,8 +25,9 @@ func main() {
 	// doRequestResponse(ctx, appServiceClient)
 	// doServerStreaming(ctx, appServiceClient)
 	// doClientStreaming(ctx, appServiceClient)
-	doneCh := doBiDiStreaming(ctx, appServiceClient)
-	<-doneCh
+	/* doneCh := doBiDiStreaming(ctx, appServiceClient)
+	<-doneCh */
+	doRequestResponseWithTimeout(ctx, appServiceClient)
 }
 
 func doRequestResponse(ctx context.Context, appServiceClient proto.AppServiceClient) {
@@ -37,6 +40,26 @@ func doRequestResponse(ctx context.Context, appServiceClient proto.AppServiceCli
 		log.Fatalln(err)
 	}
 	fmt.Println("Result :", res.GetResult())
+}
+
+func doRequestResponseWithTimeout(ctx context.Context, appServiceClient proto.AppServiceClient) {
+	timeoutCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	addReq := &proto.MathOperationRequest{
+		X: 100,
+		Y: 200,
+	}
+
+	res, err := appServiceClient.Add(timeoutCtx, addReq)
+	if err != nil {
+		if code := status.Code(err); code == codes.DeadlineExceeded {
+			fmt.Println("timeout occurred")
+			return
+		}
+		log.Fatalln(err)
+	}
+	fmt.Printf("Result = %d\n", res.GetResult())
 }
 
 func doServerStreaming(ctx context.Context, appServiceClient proto.AppServiceClient) {
@@ -90,13 +113,15 @@ func doBiDiStreaming(ctx context.Context, appServiceClient proto.AppServiceClien
 		log.Fatalln(err)
 	}
 	go sendRequests(ctx, clientStream)
-	cancelCtx, cancel := context.WithCancel(ctx)
+	done := make(chan struct{})
 	go func() {
 		fmt.Println("Press ENTER to cancel")
 		fmt.Scanln()
-		cancel()
+		clientStream.CloseSend()
+		close(done)
 	}()
-	return recvResponse(cancelCtx, clientStream)
+	go recvResponse(ctx, clientStream)
+	return done
 	// <-done
 }
 
@@ -123,23 +148,12 @@ func sendRequests(ctx context.Context, clientStream proto.AppService_GreetClient
 	}
 }
 
-func recvResponse(ctx context.Context, clientStream proto.AppService_GreetClient) <-chan struct{} {
-	doneCh := make(chan struct{})
-	go func() {
-	LOOP:
-		for {
-			select {
-			case <-ctx.Done():
-				break LOOP
-			default:
-				res, err := clientStream.Recv()
-				if err != nil {
-					log.Fatalln(err)
-				}
-				log.Println(res.GetMessage())
-			}
+func recvResponse(ctx context.Context, clientStream proto.AppService_GreetClient) {
+	for {
+		res, err := clientStream.Recv()
+		if err != nil {
+			log.Fatalln(err)
 		}
-		close(doneCh)
-	}()
-	return doneCh
+		log.Println(res.GetMessage())
+	}
 }
