@@ -6,6 +6,7 @@ import (
 	"grpc-app/proto"
 	"io"
 	"log"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -20,7 +21,8 @@ func main() {
 	appServiceClient := proto.NewAppServiceClient(clientConn)
 	ctx := context.Background()
 	// doRequestResponse(ctx, appServiceClient)
-	doServerStreaming(ctx, appServiceClient)
+	// doServerStreaming(ctx, appServiceClient)
+	doClientStreaming(ctx, appServiceClient)
 }
 
 func doRequestResponse(ctx context.Context, appServiceClient proto.AppServiceClient) {
@@ -55,5 +57,27 @@ func doServerStreaming(ctx context.Context, appServiceClient proto.AppServiceCli
 			break
 		}
 		fmt.Printf("Prime No : %d\n", resp.GetPrimeNo())
+		time.Sleep(500 * time.Millisecond)
 	}
+}
+
+func doClientStreaming(ctx context.Context, appServiceClient proto.AppServiceClient) {
+	data := []int32{3, 1, 4, 2, 5, 6, 8, 7, 9}
+	clientStream, err := appServiceClient.CalculateAverage(ctx)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	for _, no := range data {
+		req := &proto.AverageRequest{
+			No: no,
+		}
+		log.Printf("Sending No : %d\n", no)
+		clientStream.Send(req)
+		time.Sleep(500 * time.Millisecond)
+	}
+	res, err := clientStream.CloseAndRecv()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	fmt.Printf("Average : %d\n", res.GetAverage())
 }
