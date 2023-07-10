@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 )
 
 type Product struct {
@@ -43,6 +44,24 @@ var products = []Product{
 	}
 */
 
+// middlewares
+func logHandler(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Printf("%s -%s\n", r.Method, r.URL.Path)
+		next(w, r)
+	}
+}
+
+func profileHandler(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		next(w, r)
+		elapsed := time.Since(start)
+		fmt.Println("Elapsed :", elapsed)
+	}
+}
+
+// request handlers
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Hello World!")
 }
@@ -76,9 +95,15 @@ func CustomersHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	server := http.NewServeMux()
-	server.HandleFunc("/", IndexHandler)
-	server.HandleFunc("/products", ProductsHandler)
-	server.HandleFunc("/customers", CustomersHandler)
+	/*
+		server.HandleFunc("/", IndexHandler)
+		server.HandleFunc("/products", ProductsHandler)
+		server.HandleFunc("/customers", CustomersHandler)
+	*/
+	server.HandleFunc("/", profileHandler(logHandler(IndexHandler)))
+	server.HandleFunc("/products", profileHandler(logHandler(ProductsHandler)))
+	server.HandleFunc("/customers", profileHandler(logHandler(CustomersHandler)))
+
 	http.ListenAndServe(":8080", server)
 }
 
