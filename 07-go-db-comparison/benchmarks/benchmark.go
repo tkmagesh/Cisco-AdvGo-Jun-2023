@@ -18,7 +18,7 @@ import (
 func init() {
 	var err error
 	// Opening a database connection.
-	db, err = sql.Open("mysql", "theuser:thepass@tcp(localhost:3306)/thedb?multiStatements=true&parseTime=true")
+	db, err = sql.Open("mysql", "root:rootuser@tcp(localhost:3306)/todo?multiStatements=true&parseTime=true")
 	if err != nil {
 		panic(err)
 	}
